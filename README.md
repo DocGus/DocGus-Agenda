@@ -1,3 +1,24 @@
+# DocGus Agenda Digital Avanzada
+
+## Planeamiento y Alcance
+
+Este proyecto busca crear una agenda digital avanzada orientada a la gestión de metas y actividades, combinando:
+
+- Tablas de actividades “palomeables” (checkboxes) diarias, semanales, mensuales y configurables.
+- Integración con un calendario gráfico (tipo Google Calendar) con funcionalidades de checklists y seguimiento de progreso.
+- Gestión de grupos para actividades y metas.
+- Notas rápidas tipo Google Keep.
+- Herramientas de productividad: mapas mentales, cronómetro, reloj de arena, etc.
+- Escalabilidad para integrar agenda de profesionales de salud en futuras etapas.
+
+### Alcance Inicial (MVP)
+
+- Home page funcional y atractiva.
+- Vista de agenda con tabla de actividades “palomeables” para el día actual.
+- Sección de notas rápidas simple.
+- Estructura de navegación para futuras secciones.
+- Documentación inicial clara en README y archivos de planeamiento.
+
 # WebApp boilerplate with React JS and Flask API
 
 Build web applications using React.js for the front end and python/flask for your backend API.
@@ -11,7 +32,7 @@ Build web applications using React.js for the front end and python/flask for you
 
 ### 1) Installation:
 
-> If you use Github Codespaces (recommended) or Gitpod this template will already come with Python, Node and the Posgres Database installed. If you are working locally make sure to install Python 3.10, Node 
+> If you use Github Codespaces (recommended) or Gitpod this template will already come with Python, Node and the Posgres Database installed. If you are working locally make sure to install Python 3.10, Node
 
 It is recomended to install the backend first, make sure you have Python 3.10, Pipenv and a database engine (Posgress recomended)
 
@@ -61,11 +82,11 @@ And you will see the following message:
 
 ### **Important note for the database and the data inside it**
 
-Every Github codespace environment will have **its own database**, so if you're working with more people eveyone will have a different database and different records inside it. This data **will be lost**, so don't spend too much time manually creating records for testing, instead, you can automate adding records to your database by editing ```commands.py``` file inside ```/src/api``` folder. Edit line 32 function ```insert_test_data``` to insert the data according to your model (use the function ```insert_test_users``` above as an example). Then, all you need to do is run ```pipenv run insert-test-data```.
+Every Github codespace environment will have **its own database**, so if you're working with more people eveyone will have a different database and different records inside it. This data **will be lost**, so don't spend too much time manually creating records for testing, instead, you can automate adding records to your database by editing `commands.py` file inside `/src/api` folder. Edit line 32 function `insert_test_data` to insert the data according to your model (use the function `insert_test_users` above as an example). Then, all you need to do is run `pipenv run insert-test-data`.
 
 ### Front-End Manual Installation:
 
--   Make sure you are using node version 20 and that you have already successfully installed and runned the backend.
+- Make sure you are using node version 20 and that you have already successfully installed and runned the backend.
 
 1. Install the packages: `$ npm install`
 2. Start coding! start the webpack dev server `$ npm run start`
