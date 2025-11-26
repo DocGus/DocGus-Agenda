@@ -26,4 +26,10 @@ const Main = () => {
 }
 
 // Render the Main component into the root DOM element.
-ReactDOM.createRoot(document.getElementById('root')).render(<Main />)
+// Avoid creating multiple roots in HMR by reusing a global root.
+const container = document.getElementById('root');
+if (!container) throw new Error('Root container not found');
+if (!window.__DOCGUS_ROOT__) {
+    window.__DOCGUS_ROOT__ = ReactDOM.createRoot(container);
+}
+window.__DOCGUS_ROOT__.render(<Main />);

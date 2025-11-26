@@ -37,6 +37,15 @@ app.config.setdefault('JWT_SECRET_KEY', os.environ.get(
     'JWT_SECRET_KEY', 'dev-secret-key'))
 jwt = JWTManager(app)
 
+# In development, ensure DB tables exist so Register works without running migrations manually.
+if ENV == "development":
+    with app.app_context():
+        try:
+            db.create_all()
+            app.logger.info("Database tables ensured via create_all() in development mode.")
+        except Exception as e:
+            app.logger.error(f"Error creating DB tables: {e}")
+
 # add the admin
 setup_admin(app)
 

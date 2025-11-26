@@ -52,7 +52,8 @@ const Login = () => {
                 }, 800);
             }
         } catch (err) {
-            setError("Ocurrió un error al conectar con el servidor.");
+            console.error('Login error:', err);
+            setError(err?.message || "Ocurrió un error al conectar con el servidor.");
         }
     };
 

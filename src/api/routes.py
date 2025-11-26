@@ -13,52 +13,65 @@ CORS(api)
 
 @api.route('/login', methods=['POST'])
 def login_user():
-    data = request.get_json()
-    if not data:
-        return jsonify({"message": "No data provided"}), 400
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"message": "No data provided"}), 400
 
-    email = data.get("email")
-    password = data.get("password")
-    if not email or not password:
-        return jsonify({"message": "Email and password required"}), 400
+        email = data.get("email")
+        password = data.get("password")
+        if not email or not password:
+            return jsonify({"message": "Email and password required"}), 400
 
-    user = User.query.filter_by(email=email).first()
-    if not user or not user.check_password(password):
-        return jsonify({"message": "Credenciales incorrectas"}), 401
+        user = User.query.filter_by(email=email).first()
+        if not user or not user.check_password(password):
+            return jsonify({"message": "Credenciales incorrectas"}), 401
 
-    # Generar token JWT
-    token = create_access_token(identity=user.id)
-    user_data = {
-        "id": user.id,
-        "email": user.email,
-        "role": getattr(user, "role", "UsuarioAgenda")
-    }
-    return jsonify({"token": token, "user": user_data}), 200
+        # Generar token JWT
+        token = create_access_token(identity=user.id)
+        user_data = {
+            "id": user.id,
+            "email": user.email,
+            "role": getattr(user, "role", "UsuarioAgenda")
+        }
+        return jsonify({"token": token, "user": user_data}), 200
+    except Exception as e:
+        api.logger.error(f"Error in login_user: {e}")
+        return jsonify({"message": "Internal server error"}), 500
 
 
 @api.route('/register', methods=['POST'])
 def register_user():
-    data = request.get_json()
-    if not data:
-        return jsonify({"message": "No data provided"}), 400
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"message": "No data provided"}), 400
 
-    email = data.get("email")
-    password = data.get("password")
-    role = data.get("role") or "UsuarioAgenda"
-    if not email or not password:
-        return jsonify({"message": "Email and password required"}), 400
+        email = data.get("email")
+        password = data.get("password")
+        role = data.get("role") or "UsuarioAgenda"
+        if not email or not password:
+            return jsonify({"message": "Email and password required"}), 400
 
-    # Check if user already exists
-    user = User.query.filter_by(email=email).first()
-    if user:
-        return jsonify({"message": "User already exists"}), 409
+        # Check if user already exists
+        user = User.query.filter_by(email=email).first()
+        if user:
+            return jsonify({"message": "User already exists"}), 409
 
-    new_user = User(email=email, is_active=True, role=role)
-    new_user.set_password(password)
-    db.session.add(new_user)
-    db.session.commit()
+        new_user = User(email=email, is_active=True, role=role)
+        new_user.set_password(password)
+        db.session.add(new_user)
+        db.session.commit()
 
-    return jsonify({"message": "Usuario registrado exitosamente"}), 201
+        return jsonify({"message": "Usuario registrado exitosamente"}), 201
+    except Exception as e:
+        api.logger.error(f"Error in register_user: {e}")
+        # Attempt to rollback session on error
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+        return jsonify({"message": "Internal server error"}), 500
 
 
 @api.route('/hello', methods=['POST', 'GET'])

@@ -70,7 +70,8 @@ const Register = () => {
                 setTimeout(() => navigate("/login"), 2000);
             }
         } catch (err) {
-            setError("Ocurrió un error en el servidor.");
+            console.error('Register error:', err);
+            setError(err?.message || "Ocurrió un error en el servidor.");
         }
     };
 
