@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: docgus
+      POSTGRES_PASSWORD: docgus
+      POSTGRES_DB: docgus
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    environment:
+      - DATABASE_URL=postgresql://docgus:docgus@db:5432/docgus
+      - FLASK_ENV=development
+      - JWT_SECRET_KEY=dev-secret-key
+    ports:
+      - "3001:3001"
+    depends_on:
+      - db
+    volumes:
+      - ./:/app
+
+  frontend:
+    image: node:20
+    working_dir: /app/front
+    volumes:
+      - ./src/front:/app
+      - /app/node_modules
+    command: sh -c "npm install --silent && npm run dev -- --host 0.0.0.0"
+    environment:
+      - VITE_BACKEND_URL=http://localhost:3001
+    ports:
+      - "5173:5173"
+
+volumes:
+  db_data:
