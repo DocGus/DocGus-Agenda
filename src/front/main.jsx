@@ -8,11 +8,14 @@ import { BackendURL } from './components/BackendURL';
 
 const Main = () => {
     
-    if(! import.meta.env.VITE_BACKEND_URL ||  import.meta.env.VITE_BACKEND_URL == "") return (
+    // In development we allow running without VITE_BACKEND_URL because vite proxy is available.
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
+    const isDev = import.meta.env.MODE === 'development';
+    if (!backendUrl && !isDev) return (
         <React.StrictMode>
               <BackendURL/ >
         </React.StrictMode>
-        );
+    );
     return (
         <React.StrictMode>  
             {/* Provide global state to all components */}
