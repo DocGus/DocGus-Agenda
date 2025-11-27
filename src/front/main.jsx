@@ -8,11 +8,14 @@ import { BackendURL } from './components/BackendURL';
 
 const Main = () => {
     
-    if(! import.meta.env.VITE_BACKEND_URL ||  import.meta.env.VITE_BACKEND_URL == "") return (
+    // Allow empty VITE_BACKEND_URL during development (we use Vite proxy or relative paths).
+    // Only show the BackendURL helper when in production and the variable is missing.
+    const backendUrlMissing = !import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_BACKEND_URL === "";
+    if (backendUrlMissing && !import.meta.env.DEV) return (
         <React.StrictMode>
               <BackendURL/ >
         </React.StrictMode>
-        );
+    );
     return (
         <React.StrictMode>  
             {/* Provide global state to all components */}
