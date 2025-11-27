@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
+import NetworkErrorAlert from '../components/NetworkErrorAlert';
 
 const Login = () => {
     const navigate = useNavigate();
@@ -13,6 +14,7 @@ const Login = () => {
     });
 
     const [error, setError] = useState("");
+    const [errorObj, setErrorObj] = useState(null);
     const [success, setSuccess] = useState("");
 
     const handleChange = (e) => {
@@ -52,7 +54,15 @@ const Login = () => {
                 }, 800);
             }
         } catch (err) {
-            setError("Ocurrió un error al conectar con el servidor.");
+            console.error('Login error:', err);
+            setErrorObj(err);
+            if (err?.isNetworkError) {
+                setError('No se pudo conectar con el servidor backend. Si trabajas en un entorno remoto, revisa la configuración de `VITE_BACKEND_URL`.');
+            } else if (err?.response) {
+                setError(err.response?.message || JSON.stringify(err.response));
+            } else {
+                setError(err?.message || "Ocurrió un error al conectar con el servidor.");
+            }
         }
     };
 
@@ -91,7 +101,11 @@ const Login = () => {
                             required
                         />
                     </div>
-                    {error && <div className="alert alert-danger mt-3">{error}</div>}
+                    {errorObj?.isNetworkError ? (
+                        <NetworkErrorAlert details={errorObj.message} />
+                    ) : (
+                        error && <div className="alert alert-danger mt-3">{error}</div>
+                    )}
                     {success && <div className="alert alert-success mt-3">{success}</div>}
                     <div className="text-center mt-4">
                         <button type="submit" className="btn btn-light btn-lg text-dark w-100">Entrar</button>
