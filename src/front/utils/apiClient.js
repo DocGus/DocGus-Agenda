@@ -6,15 +6,32 @@ const getBackendUrlCandidates = () => {
   if (envUrl && envUrl.trim() !== "") out.push(normalize(envUrl));
 
   if (import.meta.env.DEV) {
-    // Try hostname-based backend first (works when frontend accessed as localhost or remote host)
+    // If the frontend is served from a remote host (Codespaces / forwarded URL)
+    // prefer the relative URL first to avoid attempting loopback hosts (which
+    // often produce CORS/preflight failures in that environment). Otherwise
+    // try hostname-based and local fallbacks as before.
     try {
       const loc = window && window.location;
-      if (loc && loc.hostname) {
-        out.push(`${loc.protocol}//${loc.hostname}:3001`);
+      const hostname = loc && loc.hostname;
+      const isLoopback =
+        !hostname ||
+        hostname === "localhost" ||
+        hostname === "127.0.0.1" ||
+        hostname === "0.0.0.0" ||
+        hostname === "::1";
+
+      if (!isLoopback) {
+        // remote dev URL (Codespaces / devcontainer). Try relative path first.
+        out.push("");
+      }
+
+      if (hostname) {
+        out.push(`${loc.protocol}//${hostname}:3001`);
       }
     } catch (e) {
       // ignore
     }
+
     // Common developer fallbacks
     out.push("http://localhost:3001");
     out.push("http://127.0.0.1:3001");
