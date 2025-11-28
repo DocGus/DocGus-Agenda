@@ -104,6 +104,39 @@ Cada entorno de Github Codespace tendrá **su propia base de datos**, por lo que
 
 Esta plantilla está 100% lista para desplegarse con Render.com y Heroku en cuestión de minutos. Por favor, lee la [documentación oficial al respecto](https://4geeks.com/docs/start/deploy-to-render-com).
 
+### Desarrollo con Docker (Postgres + Redis)
+
+También puedes levantar un entorno de desarrollo completo con Postgres y Redis usando `docker compose` y el archivo `docker-compose.override.yml` incluido.
+
+1. Levanta los servicios:
+
+```bash
+docker compose up -d
+```
+
+2. Exporta las variables de entorno (ejemplo):
+
+```bash
+export DATABASE_URL=postgresql://docgus:docgus@localhost:5432/docgus
+export RATELIMIT_STORAGE_URL=redis://localhost:6379/0
+export JWT_SECRET_KEY=dev-secret-key
+```
+
+3. Aplica migraciones y pobla datos de desarrollo:
+
+```bash
+pipenv run flask db upgrade
+pipenv run python tools/seed_dev.py
+```
+
+4. Inicia la aplicación:
+
+```bash
+pipenv run start
+```
+
+Nota: en entornos de producción cambia `JWT_SECRET_KEY` y usa credenciales seguras para Postgres y Redis.
+
 ### Contribuyentes
 
 Esta plantilla fue construida como parte del [Coding Bootcamp](https://4geeksacademy.com/us/coding-bootcamp) de 4Geeks Academy por [Alejandro Sanchez](https://twitter.com/alesanchezr) y muchos otros contribuyentes. Descubre más sobre nuestro [Curso de Desarrollador Full Stack](https://4geeksacademy.com/us/coding-bootcamps/part-time-full-stack-developer) y [Bootcamp de Ciencia de Datos](https://4geeksacademy.com/us/coding-bootcamps/datascience-machine-learning).
