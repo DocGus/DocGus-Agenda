@@ -2,6 +2,8 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 import os
+# Compatibility shim: ensure `werkzeug.__version__` exists for Werkzeug 3.x
+from compat import werkzeug_shim  # noqa: F401
 from flask import Flask, request, jsonify, url_for, send_from_directory
 from flask_migrate import Migrate
 from flask_swagger import swagger
@@ -11,6 +13,8 @@ from api.routes import api
 from api.admin import setup_admin
 from api.commands import setup_commands
 from flask_jwt_extended import JWTManager
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 # from models import Person
 
@@ -37,14 +41,18 @@ app.config.setdefault('JWT_SECRET_KEY', os.environ.get(
     'JWT_SECRET_KEY', 'dev-secret-key'))
 jwt = JWTManager(app)
 
-# In development, ensure DB tables exist so Register works without running migrations manually.
-if ENV == "development":
-    with app.app_context():
-        try:
-            db.create_all()
-            app.logger.info("Database tables ensured via create_all() in development mode.")
-        except Exception as e:
-            app.logger.error(f"Error creating DB tables: {e}")
+# Rate limiting
+limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    default_limits=[os.getenv('RATELIMIT_DEFAULT', '200 per day;50 per hour')]
+)
+
+# Enforce secure JWT secret in non-development environments
+if ENV != "development":
+    configured_jwt = app.config.get('JWT_SECRET_KEY')
+    if not configured_jwt or configured_jwt == 'dev-secret-key':
+        raise RuntimeError("JWT_SECRET_KEY must be set to a secure value in production")
 
 # add the admin
 setup_admin(app)
@@ -61,6 +69,31 @@ app.register_blueprint(api, url_prefix='/api')
 @app.errorhandler(APIException)
 def handle_invalid_usage(error):
     return jsonify(error.to_dict()), error.status_code
+
+
+@app.errorhandler(Exception)
+def handle_unexpected_error(error):
+    # Para peticiones a la API devolver JSON en lugar de HTML
+    try:
+        from flask import request
+        status = getattr(error, 'code', 500)
+        if request.path.startswith('/api'):
+            # Log full exception for debugging/CI
+            app.logger.exception(error)
+            # En desarrollo incluimos detalles; en producción ocultamos detalles
+            details = str(error) if ENV == "development" else None
+            payload = {"message": "Internal server error", "details": details}
+            return jsonify(payload), status
+    except Exception:
+        # Si algo falla al intentar construir la respuesta JSON, caemos al manejador por defecto
+        pass
+
+    # Para rutas no-API en desarrollo, re-lanzar el error para ver la página de debug
+    if ENV == "development":
+        raise error
+
+    # En producción devolver un mensaje genérico
+    return jsonify({"message": "Internal server error"}), 500
 
 # generate sitemap with all your endpoints
 

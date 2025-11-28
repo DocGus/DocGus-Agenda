@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/bootstrap.css";
+import NetworkErrorAlert from '../components/NetworkErrorAlert';
 
 const Register = () => {
     const navigate = useNavigate();
@@ -23,6 +24,7 @@ const Register = () => {
     });
 
     const [error, setError] = useState("");
+    const [errorObj, setErrorObj] = useState(null);
     const [success, setSuccess] = useState("");
 
     useEffect(() => {
@@ -71,7 +73,16 @@ const Register = () => {
             }
         } catch (err) {
             console.error('Register error:', err);
-            setError(err?.message || "Ocurrió un error en el servidor.");
+            setErrorObj(err);
+            if (err?.isNetworkError) {
+                setError('Error de red: no se pudo conectar con el servidor.');
+            } else if (err?.response) {
+                // API returned a JSON error body
+                const msg = err.response?.message || JSON.stringify(err.response);
+                setError(msg);
+            } else {
+                setError(err?.message || 'Error al registrar');
+            }
         }
     };
 
@@ -131,7 +142,11 @@ const Register = () => {
                         </div>
                         {/* ...eliminado campo institución... */}
                     </div>
-                    {error && <div className="alert alert-danger mt-4">{error}</div>}
+                    {errorObj?.isNetworkError ? (
+                        <NetworkErrorAlert details={errorObj.message} />
+                    ) : (
+                        error && <div className="alert alert-danger mt-4">{error}</div>
+                    )}
                     {success && <div className="alert alert-success mt-4">{success}</div>}
                     <div className="text-center mt-4">
                         <button type="submit" className="btn btn-light btn-lg text-dark w-100">Registrarme</button>

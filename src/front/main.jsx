@@ -8,10 +8,10 @@ import { BackendURL } from './components/BackendURL';
 
 const Main = () => {
     
-    // In development we allow running without VITE_BACKEND_URL because vite proxy is available.
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
-    const isDev = import.meta.env.MODE === 'development';
-    if (!backendUrl && !isDev) return (
+    // Allow empty VITE_BACKEND_URL during development (we use Vite proxy or relative paths).
+    // Only show the BackendURL helper when in production and the variable is missing.
+    const backendUrlMissing = !import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_BACKEND_URL === "";
+    if (backendUrlMissing && !import.meta.env.DEV) return (
         <React.StrictMode>
               <BackendURL/ >
         </React.StrictMode>
@@ -29,10 +29,4 @@ const Main = () => {
 }
 
 // Render the Main component into the root DOM element.
-// Avoid creating multiple roots in HMR by reusing a global root.
-const container = document.getElementById('root');
-if (!container) throw new Error('Root container not found');
-if (!window.__DOCGUS_ROOT__) {
-    window.__DOCGUS_ROOT__ = ReactDOM.createRoot(container);
-}
-window.__DOCGUS_ROOT__.render(<Main />);
+ReactDOM.createRoot(document.getElementById('root')).render(<Main />)

@@ -50,6 +50,84 @@ It is recomended to install the backend first, make sure you have Python 3.10, P
 5. Run the migrations: `$ pipenv run upgrade`
 6. Run the application: `$ pipenv run start`
 
+## First run — Quickstart (rápido)
+
+Sigue estos pasos mínimos para que cualquier colaborador arranque el proyecto localmente.
+
+1. Clona el repositorio y sitúate en la rama principal:
+
+```bash
+git clone <repo-url>
+cd DocGus-Agenda
+git checkout main
+git pull origin main
+```
+
+2. Backend — dependencias y variables de entorno:
+
+```bash
+# Opción A (Pipenv, recomendado si usas Pipfile)
+pipenv install
+cp .env.example .env
+# Edita .env y configura las variables necesarias. Para desarrollo con Vite puedes dejar
+# VITE_BACKEND_URL vacío para usar rutas relativas y el proxy de Vite, o poner
+# VITE_BACKEND_URL=http://localhost:3001 si prefieres acceso directo.
+```
+
+3. Base de datos y migraciones:
+
+```bash
+# Si usas Flask-Migrate/Alembic (recomendado):
+pipenv run migrate   # (si has cambiado modelos)
+pipenv run upgrade
+
+# Alternativa rápida (solo en desarrollo): crear tablas automáticamente
+# desde el contexto de Flask (útil si no quieres ejecutar alembic ahora):
+PYTHONPATH=src python3 - <<'PY'
+from app import app
+from api.models import db
+with app.app_context():
+  db.create_all()
+  print('db.create_all() executed')
+PY
+```
+
+4. Levantar servicios:
+
+```bash
+# Backend (dentro de Pipenv)
+pipenv run start
+
+# Frontend
+npm ci
+# Usar vite en modo dev; la opción --host permite accesos desde otra máquina si usas Codespaces
+npm run dev -- --host
+```
+
+5. Probar localmente:
+
+```bash
+# Backend: comprobar endpoint
+curl -v http://127.0.0.1:3001/api/ || true
+
+# Frontend: abrir la URL que Vite muestre (ej: http://localhost:3000)
+```
+
+6. Tests (opcional pero recomendado):
+
+```bash
+# Backend
+pytest
+
+# Frontend
+npm test
+```
+
+Notas rápidas:
+- Mantén `main` en estado desplegable: abre PRs pequeños y ejecuta tests en CI antes de mergear.
+- Si trabajas en un devcontainer/Codespace, ajusta `VITE_BACKEND_URL` si el backend está fuera del contenedor (por ejemplo `host.docker.internal:3001`).
+
+
 > Note: Codespaces users can connect to psql by typing: `psql -h localhost -U gitpod example`
 
 ### Undo a migration

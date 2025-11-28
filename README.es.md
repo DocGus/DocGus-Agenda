@@ -50,6 +50,15 @@ Se recomienda instalar el backend primero, asegúrate de tener Python 3.10, Pipe
 5. Ejecuta las migraciones: `$ pipenv run upgrade`
 6. Ejecuta la aplicación: `$ pipenv run start`
 
+### Rate limiting (prevención de abuso)
+
+Para proteger endpoints críticos como `/api/register` y `/api/login`, la aplicación incluye soporte para rate limiting mediante `Flask-Limiter`.
+
+- Variable de entorno: `RATELIMIT_DEFAULT` (por ejemplo `200 per day;50 per hour`).
+- Para entornos productivos se recomienda configurar un backend persistente (Redis) y definir `RATELIMIT_STORAGE_URL`, por ejemplo: `redis://localhost:6379/0`.
+
+Si no configuras un almacenamiento persistente, Flask-Limiter usará un almacenamiento en memoria (no recomendado para clusters o producción).
+
 > Nota: Los usuarios de Codespaces pueden conectarse a psql escribiendo: `psql -h localhost -U gitpod example`
 
 ### Deshacer una migración
@@ -94,6 +103,39 @@ Cada entorno de Github Codespace tendrá **su propia base de datos**, por lo que
 ## ¡Publica tu sitio web!
 
 Esta plantilla está 100% lista para desplegarse con Render.com y Heroku en cuestión de minutos. Por favor, lee la [documentación oficial al respecto](https://4geeks.com/docs/start/deploy-to-render-com).
+
+### Desarrollo con Docker (Postgres + Redis)
+
+También puedes levantar un entorno de desarrollo completo con Postgres y Redis usando `docker compose` y el archivo `docker-compose.override.yml` incluido.
+
+1. Levanta los servicios:
+
+```bash
+docker compose up -d
+```
+
+2. Exporta las variables de entorno (ejemplo):
+
+```bash
+export DATABASE_URL=postgresql://docgus:docgus@localhost:5432/docgus
+export RATELIMIT_STORAGE_URL=redis://localhost:6379/0
+export JWT_SECRET_KEY=dev-secret-key
+```
+
+3. Aplica migraciones y pobla datos de desarrollo:
+
+```bash
+pipenv run flask db upgrade
+pipenv run python tools/seed_dev.py
+```
+
+4. Inicia la aplicación:
+
+```bash
+pipenv run start
+```
+
+Nota: en entornos de producción cambia `JWT_SECRET_KEY` y usa credenciales seguras para Postgres y Redis.
 
 ### Contribuyentes
 
