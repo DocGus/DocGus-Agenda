@@ -1,3 +1,4 @@
+import os
 from flask_cors import CORS
 from api.utils import generate_sitemap, APIException
 from api.models import db, User
@@ -7,8 +8,8 @@ from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identi
 # single Blueprint for api endpoints
 api = Blueprint('api', __name__)
 
-# Allow CORS requests to this API
-CORS(api)
+# Configure CORS for the API blueprint. Use `CORS_ORIGINS` env var to restrict in production.
+CORS(api, resources={r"/api/*": {"origins": os.getenv('CORS_ORIGINS', '*')}})
 
 
 @api.route('/login', methods=['POST'])
