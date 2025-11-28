@@ -5,6 +5,8 @@ from flask import current_app
 from flask_limiter.util import get_remote_address
 from flask_limiter import Limiter
 from functools import wraps
+import time
+import threading
 from api.utils import generate_sitemap, APIException
 from api.models import db, User
 from flask import Flask, request, jsonify, url_for, Blueprint
@@ -51,7 +53,7 @@ def _apply_limit(limit_str):
 
 
 @api.route('/login', methods=['POST'])
-@_apply_limit('10 per minute')
+@_simple_rate_limit('10 per minute')
 def login_user():
     data = request.get_json(silent=True) or {}
     email = data.get("email")
@@ -80,7 +82,7 @@ def login_user():
 
 
 @api.route('/register', methods=['POST'])
-@_apply_limit('5 per minute')
+@_simple_rate_limit('5 per minute')
 def register_user():
     data = request.get_json(silent=True) or {}
     email = data.get("email")
@@ -156,5 +158,49 @@ def _apply_limit(limit_str):
                 return limiter.limit(limit_str)(f)(*args, **kwargs)
             return f(*args, **kwargs)
 
+        return wrapped
+    return decorator
+
+
+# Simple in-memory per-IP rate limiter for specific endpoints (development-only).
+RATE_STORE: dict = {}
+RATE_LOCK = threading.Lock()
+
+def _simple_rate_limit(limit_str):
+    """Simple decorator enforcing limits like '5 per minute' per remote IP."""
+    parts = limit_str.split(' per ')
+    try:
+        count = int(parts[0].strip())
+        unit = parts[1].strip()
+    except Exception:
+        # fallback: no limit
+        def _noop(f):
+            return f
+        return _noop
+
+    unit_seconds = {'second': 1, 'minute': 60, 'hour': 3600, 'day': 86400}
+    # accept plural
+    for k in list(unit_seconds.keys()):
+        if unit.startswith(k):
+            seconds = unit_seconds[k]
+            break
+    else:
+        seconds = 60
+
+    def decorator(f):
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            ip = request.remote_addr or get_remote_address()
+            key = (ip, request.path)
+            now = time.time()
+            with RATE_LOCK:
+                entries = RATE_STORE.get(key, [])
+                # prune old
+                entries = [t for t in entries if now - t < seconds]
+                if len(entries) >= count:
+                    return jsonify({"message": "Rate limit exceeded"}), 429
+                entries.append(now)
+                RATE_STORE[key] = entries
+            return f(*args, **kwargs)
         return wrapped
     return decorator
