@@ -2,6 +2,8 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 import os
+# Compatibility shim: ensure `werkzeug.__version__` exists for Werkzeug 3.x
+from compat import werkzeug_shim  # noqa: F401
 from flask import Flask, request, jsonify, url_for, send_from_directory
 from flask_migrate import Migrate
 from flask_swagger import swagger
