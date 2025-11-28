@@ -55,6 +55,29 @@ app.register_blueprint(api, url_prefix='/api')
 def handle_invalid_usage(error):
     return jsonify(error.to_dict()), error.status_code
 
+
+@app.errorhandler(Exception)
+def handle_unexpected_error(error):
+    # Para peticiones a la API devolver JSON en lugar de HTML
+    try:
+        from flask import request
+        status = getattr(error, 'code', 500)
+        if request.path.startswith('/api'):
+            # En desarrollo incluimos detalles; en producción ocultamos detalles
+            details = str(error) if ENV == "development" else None
+            payload = {"message": "Internal server error", "details": details}
+            return jsonify(payload), status
+    except Exception:
+        # Si algo falla al intentar construir la respuesta JSON, caemos al manejador por defecto
+        pass
+
+    # Para rutas no-API en desarrollo, re-lanzar el error para ver la página de debug
+    if ENV == "development":
+        raise error
+
+    # En producción devolver un mensaje genérico
+    return jsonify({"message": "Internal server error"}), 500
+
 # generate sitemap with all your endpoints
 
 
