@@ -19,6 +19,7 @@ services:
     environment:
       - DATABASE_URL=postgresql://docgus:docgus@db:5432/docgus
       - FLASK_ENV=development
+      - FLASK_DEBUG=1
       - JWT_SECRET_KEY=dev-secret-key
     ports:
       - "3001:3001"
@@ -31,11 +32,11 @@ services:
     image: node:20
     working_dir: /app/front
     volumes:
-      - ./src/front:/app
-      - /app/node_modules
+      - ./src/front:/app/front
+      - /app/front/node_modules
     command: sh -c "npm install --silent && npm run dev -- --host 0.0.0.0"
     environment:
-      - VITE_BACKEND_URL=http://localhost:3001
+      - VITE_BACKEND_URL=http://backend:3001
     ports:
       - "5173:5173"
 
