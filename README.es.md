@@ -50,6 +50,15 @@ Se recomienda instalar el backend primero, asegúrate de tener Python 3.10, Pipe
 5. Ejecuta las migraciones: `$ pipenv run upgrade`
 6. Ejecuta la aplicación: `$ pipenv run start`
 
+### Rate limiting (prevención de abuso)
+
+Para proteger endpoints críticos como `/api/register` y `/api/login`, la aplicación incluye soporte para rate limiting mediante `Flask-Limiter`.
+
+- Variable de entorno: `RATELIMIT_DEFAULT` (por ejemplo `200 per day;50 per hour`).
+- Para entornos productivos se recomienda configurar un backend persistente (Redis) y definir `RATELIMIT_STORAGE_URL`, por ejemplo: `redis://localhost:6379/0`.
+
+Si no configuras un almacenamiento persistente, Flask-Limiter usará un almacenamiento en memoria (no recomendado para clusters o producción).
+
 > Nota: Los usuarios de Codespaces pueden conectarse a psql escribiendo: `psql -h localhost -U gitpod example`
 
 ### Deshacer una migración

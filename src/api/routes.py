@@ -4,6 +4,7 @@ from flask import request
 from flask import current_app
 from flask_limiter.util import get_remote_address
 from flask_limiter import Limiter
+from functools import wraps
 from api.utils import generate_sitemap, APIException
 from api.models import db, User
 from flask import Flask, request, jsonify, url_for, Blueprint
@@ -28,6 +29,7 @@ if not limiter:
 
 
 @api.route('/login', methods=['POST'])
+@_apply_limit('10 per minute')
 def login_user():
     data = request.get_json(silent=True) or {}
     email = data.get("email")
@@ -56,6 +58,7 @@ def login_user():
 
 
 @api.route('/register', methods=['POST'])
+@_apply_limit('5 per minute')
 def register_user():
     data = request.get_json(silent=True) or {}
     email = data.get("email")
@@ -112,3 +115,24 @@ def private_route():
         return jsonify({"message": "User not found"}), 404
 
     return jsonify({"user": user.serialize()}), 200
+
+
+def _apply_limit(limit_str):
+    """Decorator factory that applies a limiter limit using the app's Limiter instance
+    at request time. Falls back to no-op if Limiter not configured.
+    """
+    def decorator(f):
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            try:
+                limiter = current_app.extensions.get('limiter')
+            except RuntimeError:
+                limiter = None
+
+            if limiter:
+                # Obtain decorator from limiter and call it dynamically
+                return limiter.limit(limit_str)(f)(*args, **kwargs)
+            return f(*args, **kwargs)
+
+        return wrapped
+    return decorator
