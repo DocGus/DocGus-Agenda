@@ -50,7 +50,48 @@ def _apply_limit(limit_str):
         return wrapped
     return decorator
  
+# Simple in-memory per-IP rate limiter for specific endpoints (development-only).
+RATE_STORE: dict = {}
+RATE_LOCK = threading.Lock()
 
+def _simple_rate_limit(limit_str):
+    """Simple decorator enforcing limits like '5 per minute' per remote IP."""
+    parts = limit_str.split(' per ')
+    try:
+        count = int(parts[0].strip())
+        unit = parts[1].strip()
+    except Exception:
+        # fallback: no limit
+        def _noop(f):
+            return f
+        return _noop
+
+    unit_seconds = {'second': 1, 'minute': 60, 'hour': 3600, 'day': 86400}
+    # accept plural
+    for k in list(unit_seconds.keys()):
+        if unit.startswith(k):
+            seconds = unit_seconds[k]
+            break
+    else:
+        seconds = 60
+
+    def decorator(f):
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            ip = request.remote_addr or get_remote_address()
+            key = (ip, request.path)
+            now = time.time()
+            with RATE_LOCK:
+                entries = RATE_STORE.get(key, [])
+                # prune old
+                entries = [t for t in entries if now - t < seconds]
+                if len(entries) >= count:
+                    return jsonify({"message": "Rate limit exceeded"}), 429
+                entries.append(now)
+                RATE_STORE[key] = entries
+            return f(*args, **kwargs)
+        return wrapped
+    return decorator
 
 @api.route('/login', methods=['POST'])
 @_simple_rate_limit('10 per minute')
