@@ -13,6 +13,8 @@ from api.routes import api
 from api.admin import setup_admin
 from api.commands import setup_commands
 from flask_jwt_extended import JWTManager
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 # from models import Person
 
@@ -38,6 +40,13 @@ db.init_app(app)
 app.config.setdefault('JWT_SECRET_KEY', os.environ.get(
     'JWT_SECRET_KEY', 'dev-secret-key'))
 jwt = JWTManager(app)
+
+# Rate limiting
+limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    default_limits=[os.getenv('RATELIMIT_DEFAULT', '200 per day;50 per hour')]
+)
 
 # Enforce secure JWT secret in non-development environments
 if ENV != "development":
@@ -69,6 +78,8 @@ def handle_unexpected_error(error):
         from flask import request
         status = getattr(error, 'code', 500)
         if request.path.startswith('/api'):
+            # Log full exception for debugging/CI
+            app.logger.exception(error)
             # En desarrollo incluimos detalles; en producción ocultamos detalles
             details = str(error) if ENV == "development" else None
             payload = {"message": "Internal server error", "details": details}
