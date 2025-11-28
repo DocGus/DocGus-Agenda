@@ -39,6 +39,12 @@ app.config.setdefault('JWT_SECRET_KEY', os.environ.get(
     'JWT_SECRET_KEY', 'dev-secret-key'))
 jwt = JWTManager(app)
 
+# Enforce secure JWT secret in non-development environments
+if ENV != "development":
+    configured_jwt = app.config.get('JWT_SECRET_KEY')
+    if not configured_jwt or configured_jwt == 'dev-secret-key':
+        raise RuntimeError("JWT_SECRET_KEY must be set to a secure value in production")
+
 # add the admin
 setup_admin(app)
 
