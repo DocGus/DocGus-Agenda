@@ -1,5 +1,9 @@
 import os
 from flask_cors import CORS
+from flask import request
+from flask import current_app
+from flask_limiter.util import get_remote_address
+from flask_limiter import Limiter
 from api.utils import generate_sitemap, APIException
 from api.models import db, User
 from flask import Flask, request, jsonify, url_for, Blueprint
@@ -11,17 +15,31 @@ api = Blueprint('api', __name__)
 # Configure CORS for the API blueprint. Use `CORS_ORIGINS` env var to restrict in production.
 CORS(api, resources={r"/api/*": {"origins": os.getenv('CORS_ORIGINS', '*')}})
 
+# If the app hasn't already initialized Limiter (it is initialized in app.py), attach
+# a local limiter for blueprint-level decorators access. This avoids duplicate inits.
+try:
+    limiter = current_app.extensions.get('limiter') if current_app and hasattr(current_app, 'extensions') else None
+except RuntimeError:
+    limiter = None
+
+if not limiter:
+    # fallback - create a limiter instance that will be replaced by the app-level one when available
+    limiter = Limiter(key_func=get_remote_address)
+
 
 @api.route('/login', methods=['POST'])
 def login_user():
-    data = request.get_json()
-    if not data:
-        return jsonify({"message": "No data provided"}), 400
-
+    data = request.get_json(silent=True) or {}
     email = data.get("email")
     password = data.get("password")
-    if not email or not password:
+
+    # Basic validation
+    if not isinstance(email, str) or not isinstance(password, str):
         return jsonify({"message": "Email and password required"}), 400
+    # Allow short passwords for legacy tests/dev; enforce reasonable max length
+    min_password_len = int(os.getenv('MIN_PASSWORD_LEN', 3))
+    if len(email) > 254 or len(password) < min_password_len or len(password) > 128:
+        return jsonify({"message": "Invalid email or password length"}), 400
 
     user = User.query.filter_by(email=email).first()
     if not user or not user.check_password(password):
@@ -39,15 +57,17 @@ def login_user():
 
 @api.route('/register', methods=['POST'])
 def register_user():
-    data = request.get_json()
-    if not data:
-        return jsonify({"message": "No data provided"}), 400
-
+    data = request.get_json(silent=True) or {}
     email = data.get("email")
     password = data.get("password")
     role = data.get("role") or "UsuarioAgenda"
-    if not email or not password:
+
+    # Basic validation
+    if not isinstance(email, str) or not isinstance(password, str):
         return jsonify({"message": "Email and password required"}), 400
+    min_password_len = int(os.getenv('MIN_PASSWORD_LEN', 3))
+    if len(email) > 254 or len(password) < min_password_len or len(password) > 128:
+        return jsonify({"message": "Invalid email or password length"}), 400
 
     # Check if user already exists
     user = User.query.filter_by(email=email).first()
