@@ -26,8 +26,8 @@ def login_user():
     if not user or not user.check_password(password):
         return jsonify({"message": "Credenciales incorrectas"}), 401
 
-    # Generar token JWT
-    token = create_access_token(identity=user.id)
+    # Generar token JWT (usar string para la identidad asegura compatibilidad con el backend de JWT)
+    token = create_access_token(identity=str(user.id))
     user_data = {
         "id": user.id,
         "email": user.email,
@@ -79,7 +79,14 @@ def private_route():
     if not identity:
         return jsonify({"message": "Invalid token"}), 401
 
-    user = User.query.get(identity)
+    # Identity may be stored as string in the token; convert safely to int
+    try:
+        user_id = int(identity)
+    except (TypeError, ValueError):
+        return jsonify({"message": "Invalid token identity"}), 401
+
+    # use Session.get(...) via db.session.get to avoid SQLAlchemy legacy warning
+    user = db.session.get(User, user_id)
     if not user:
         return jsonify({"message": "User not found"}), 404
 
